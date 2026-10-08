@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { MediaAsset } from "../../domain/media/types";
 
 type Props = {
@@ -8,25 +8,24 @@ type Props = {
 export function PreviewMonitor({ asset }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
-  const [url, setUrl] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
 
-  useEffect(() => {
-    if (!asset) {
-      setUrl(null);
-      return;
-    }
-    const objectUrl = URL.createObjectURL(asset.fileBlob);
-    setUrl(objectUrl);
-    setPlaying(false);
-    setCurrentTime(0);
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-    };
+  // Derive the object URL from the asset (pure derivation, no setState).
+  const url = useMemo(() => {
+    if (!asset) return null;
+    return URL.createObjectURL(asset.fileBlob);
   }, [asset]);
 
+  // Revoke the previous URL when it changes or on unmount.
+  useEffect(() => {
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [url]);
+
+  // Keep player UI in sync with the media element.
   useEffect(() => {
     const el = videoRef.current || audioRef.current;
     if (!el) return;

@@ -1,5 +1,8 @@
+import { useState } from "react";
 import type { Project } from "../../domain/project/schema";
+import type { MediaAsset } from "../../domain/media/types";
 import { MediaBin } from "../media-bin/MediaBin";
+import { PreviewMonitor } from "../preview/PreviewMonitor";
 
 type Props = {
   project: Project;
@@ -7,6 +10,8 @@ type Props = {
 };
 
 export function Editor({ project, onBack }: Props) {
+  const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", fontFamily: "system-ui, sans-serif" }}>
       <header
@@ -32,23 +37,15 @@ export function Editor({ project, onBack }: Props) {
 
       <div style={{ display: "flex", flex: 1, minHeight: 0 }}>
         <aside style={{ width: 260, borderRight: "1px solid #ddd", padding: 12, background: "#fbfbfb", overflowY: "auto" }}>
-          <MediaBin projectId={project.id} />
+          <MediaBin
+            projectId={project.id}
+            selectedId={selectedAsset?.id ?? null}
+            onSelect={setSelectedAsset}
+          />
         </aside>
 
         <main style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-          <section
-            style={{
-              flex: 1,
-              background: "#111",
-              color: "#eee",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 14,
-            }}
-          >
-            Preview monitor (coming next)
-          </section>
+          <PreviewMonitor key={selectedAsset?.id ?? "empty"} asset={selectedAsset} />
 
           <section
             style={{
