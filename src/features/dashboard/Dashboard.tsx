@@ -12,8 +12,7 @@ export function Dashboard({ onOpenProject }: Props) {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(true);
 
-  async function refresh() {
-    setLoading(true);
+  async function reload() {
     const all = await getAllProjects();
     all.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
     setProjects(all);
@@ -21,7 +20,18 @@ export function Dashboard({ onOpenProject }: Props) {
   }
 
   useEffect(() => {
-    refresh();
+    let cancelled = false;
+    async function load() {
+      const all = await getAllProjects();
+      if (cancelled) return;
+      all.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+      setProjects(all);
+      setLoading(false);
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handleCreate() {
@@ -30,14 +40,14 @@ export function Dashboard({ onOpenProject }: Props) {
     const project = createProject(trimmed);
     await saveProject(project);
     setName("");
-    await refresh();
+    await reload();
   }
 
   async function handleDelete(id: string, projectName: string) {
     const confirmed = window.confirm(`Delete "${projectName}"? This cannot be undone.`);
     if (!confirmed) return;
     await deleteProject(id);
-    await refresh();
+    await reload();
   }
 
   return (

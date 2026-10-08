@@ -17,17 +17,26 @@ export function MediaBin({ projectId }: Props) {
   const [importing, setImporting] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  async function refresh() {
-    setLoading(true);
-    const all = await getMediaForProject(projectId);
+  async function reload(projectIdToLoad: string) {
+    const all = await getMediaForProject(projectIdToLoad);
     all.sort((a, b) => a.name.localeCompare(b.name));
     setAssets(all);
     setLoading(false);
   }
 
   useEffect(() => {
-    refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    let cancelled = false;
+    async function load() {
+      const all = await getMediaForProject(projectId);
+      if (cancelled) return;
+      all.sort((a, b) => a.name.localeCompare(b.name));
+      setAssets(all);
+      setLoading(false);
+    }
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [projectId]);
 
   async function handleFiles(files: FileList | null) {
@@ -35,7 +44,7 @@ export function MediaBin({ projectId }: Props) {
     setImporting(true);
     for (const file of Array.from(files)) {
       const type = mediaTypeFromMime(file.type);
-      if (!type) continue; // skip unsupported
+      if (!type) continue;
 
       const asset: MediaAsset = {
         id: crypto.randomUUID(),
@@ -48,13 +57,11 @@ export function MediaBin({ projectId }: Props) {
         fileBlob: file,
       };
 
-      // Best-effort metadata extraction for video/audio
       if (type === "video" || type === "audio") {
         try {
-          const duration = await readMediaDuration(file, type);
-          asset.duration = duration;
+          asset.duration = await readMediaDuration(file, type);
         } catch {
-          // leave undefined if it fails
+          // ignore
         }
       }
 
@@ -64,21 +71,21 @@ export function MediaBin({ projectId }: Props) {
           asset.width = width;
           asset.height = height;
         } catch {
-          // leave undefined
+          // ignore
         }
       }
 
       await saveMediaAsset(asset);
     }
     setImporting(false);
-    await refresh();
+    await reload(projectId);
   }
 
   async function handleDelete(id: string, name: string) {
     const confirmed = window.confirm(`Remove "${name}" from the media bin?`);
     if (!confirmed) return;
     await deleteMediaAsset(id);
-    await refresh();
+    await reload(projectId);
   }
 
   return (
@@ -148,8 +155,6 @@ export function MediaBin({ projectId }: Props) {
     </div>
   );
 }
-
-// --- Metadata helpers ---
 
 function readMediaDuration(file: File, kind: "video" | "audio"): Promise<number> {
   return new Promise((resolve, reject) => {
