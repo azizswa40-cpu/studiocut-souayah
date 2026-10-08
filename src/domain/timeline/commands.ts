@@ -9,17 +9,28 @@ export interface Command {
  * Trim a clip by modifying its duration and source in/out points.
  */
 export class TrimCommand implements Command {
+  private trackId: string;
+  private clipId: string;
+  private newDuration: number;
+  private newSourceIn: number;
+  private newSourceOut: number;
   private previousState: Clip | null = null;
   private trackIndex: number = -1;
   private clipIndex: number = -1;
 
   constructor(
-    private trackId: string,
-    private clipId: string,
-    private newDuration: number,
-    private newSourceIn: number,
-    private newSourceOut: number
-  ) {}
+    trackId: string,
+    clipId: string,
+    newDuration: number,
+    newSourceIn: number,
+    newSourceOut: number
+  ) {
+    this.trackId = trackId;
+    this.clipId = clipId;
+    this.newDuration = newDuration;
+    this.newSourceIn = newSourceIn;
+    this.newSourceOut = newSourceOut;
+  }
 
   execute(state: TimelineState): void {
     this.trackIndex = state.tracks.findIndex((t) => t.id === this.trackId);
