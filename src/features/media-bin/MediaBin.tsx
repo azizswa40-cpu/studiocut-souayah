@@ -9,9 +9,11 @@ import {
 
 type Props = {
   projectId: string;
+  selectedId: string | null;
+  onSelect: (asset: MediaAsset) => void;
 };
 
-export function MediaBin({ projectId }: Props) {
+export function MediaBin({ projectId, selectedId, onSelect }: Props) {
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(true);
   const [importing, setImporting] = useState(false);
@@ -121,36 +123,44 @@ export function MediaBin({ projectId }: Props) {
       )}
 
       <ul style={{ listStyle: "none", padding: 0, margin: "12px 0 0 0" }}>
-        {assets.map((a) => (
-          <li
-            key={a.id}
-            style={{
-              padding: "8px 10px",
-              border: "1px solid #e0e0e0",
-              borderRadius: 4,
-              marginBottom: 6,
-              background: "#fff",
-              fontSize: 13,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {a.name}
-              </strong>
-              <button
-                onClick={() => handleDelete(a.id, a.name)}
-                style={{ fontSize: 11, padding: "2px 6px", cursor: "pointer" }}
-              >
-                ×
-              </button>
-            </div>
-            <div style={{ color: "#888", fontSize: 11, marginTop: 2 }}>
-              {a.type} · {(a.size / 1024 / 1024).toFixed(2)} MB
-              {a.duration !== undefined ? ` · ${a.duration.toFixed(2)}s` : ""}
-              {a.width && a.height ? ` · ${a.width}×${a.height}` : ""}
-            </div>
-          </li>
-        ))}
+        {assets.map((a) => {
+          const isSelected = a.id === selectedId;
+          return (
+            <li
+              key={a.id}
+              onClick={() => onSelect(a)}
+              style={{
+                padding: "8px 10px",
+                border: isSelected ? "1px solid #2c7be5" : "1px solid #e0e0e0",
+                borderRadius: 4,
+                marginBottom: 6,
+                background: isSelected ? "#eaf2fd" : "#fff",
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <strong style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {a.name}
+                </strong>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(a.id, a.name);
+                  }}
+                  style={{ fontSize: 11, padding: "2px 6px", cursor: "pointer" }}
+                >
+                  ×
+                </button>
+              </div>
+              <div style={{ color: "#888", fontSize: 11, marginTop: 2 }}>
+                {a.type} · {(a.size / 1024 / 1024).toFixed(2)} MB
+                {a.duration !== undefined ? ` · ${a.duration.toFixed(2)}s` : ""}
+                {a.width && a.height ? ` · ${a.width}×${a.height}` : ""}
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
